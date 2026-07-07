@@ -1,0 +1,42 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.mohammedaqeel.sarfit'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mohammedaqeel.sarfit"
+        minSdk 21
+        targetSdk 34
+        versionCode 2
+        versionName "1.1"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../release.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "SarfitBuild123!"
+            keyAlias System.getenv("KEY_ALIAS") ?: "sarfitkey"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "SarfitBuild123!"
+        }
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}
