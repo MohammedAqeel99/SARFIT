@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "676985925048",
+    "project_id": "sarfit",
+    "storage_bucket": "sarfit.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:676985925048:android:c0dc2ec15ff6a7d27cf34d",
+        "android_client_info": {
+          "package_name": "com.mohammedaqeel.sarfit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPxgpqHsifkJEed3tykMZTD1CujOhNhBY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -27,7 +27,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         username = getIntent().getStringExtra("username");
-        StreakManager.recordVisit(this, username);
+        com.google.firebase.auth.FirebaseUser fbUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (fbUser != null) {
+            StreakManager.recordVisitAndFetch(fbUser.getUid(), new StreakManager.StreakCallback() {
+                @Override
+                public void onResult(int streak, int total) {
+                    // Streak/total are shown on the Profile page; no action needed here.
+                }
+            });
+        }
         TextView tvWelcome = findViewById(R.id.tvWelcome);
         tvWelcome.setText("Welcome back, " + (username != null ? username : "Athlete") + "!");
 

@@ -3,7 +3,6 @@ package com.mohammedaqeel.sarfit;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -14,19 +13,25 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 public class LoginActivity extends AppCompatActivity {
 
-    public static final String PREFS_USERS = "sarfit_users";
+    // Kept for reference; session state is now managed by FirebaseAuth itself.
     public static final String PREFS_SESSION = "sarfit_session";
 
     private EditText etUsername, etPassword;
     private TextView tvError;
+    private FirebaseAuth auth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         Fonts.applyRecursively(this, findViewById(android.R.id.content));
+
+        auth = FirebaseAuth.getInstance();
 
         etUsername = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
@@ -64,11 +69,10 @@ public class LoginActivity extends AppCompatActivity {
         pulseX.start();
         pulseY.start();
 
-        // Auto-login if a session already exists
-        SharedPreferences session = getSharedPreferences(PREFS_SESSION, MODE_PRIVATE);
-        String loggedInUser = session.getString("current_user", null);
-        if (loggedInUser != null) {
-            goToMain(loggedInUser);
+        // Auto-login if Firebase already has a signed-in session
+        FirebaseUser current = auth.getCurrentUser();
+        if (current != null) {
+            goToMain(displayNameOf(current));
         }
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
@@ -87,34 +91,38 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void attemptLogin() {
-        String user = etUsername.getText().toString().trim();
+        final String username = etUsername.getText().toString().trim();
         String pass = etPassword.getText().toString();
 
-        if (TextUtils.isEmpty(user) || TextUtils.isEmpty(pass)) {
+        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(pass)) {
             tvError.setText("Please enter username and password.");
             return;
         }
 
-        SharedPreferences users = getSharedPreferences(PREFS_USERS, MODE_PRIVATE);
-        String storedPass = users.getString(user, null);
+        String pseudoEmail = toPseudoEmail(username);
+        tvError.setText("Signing in...");
 
-        if (storedPass == null) {
-            tvError.setText("No account found. Please sign up first.");
-            return;
-        }
+        auth.signInWithEmailAndPassword(pseudoEmail, pass)
+                .addOnCompleteListener(this, new com.google.android.gms.tasks.OnCompleteListener<com.google.firebase.auth.AuthResult>() {
+                    @Override
+                    public void onComplete(com.google.android.gms.tasks.Task<com.google.firebase.auth.AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            tvError.setText("");
+                            goToMain(username);
+                        } else {
+                            tvError.setText("Login failed: incorrect username/password, or no account exists.");
+                        }
+                    }
+                });
+    }
 
-        if (!storedPass.equals(pass)) {
-            tvError.setText("Incorrect password.");
-            return;
-        }
+    static String toPseudoEmail(String username) {
+        return username.trim().toLowerCase().replaceAll("[^a-z0-9._-]", "") + "@sarfit.app";
+    }
 
-        tvError.setText("");
-        getSharedPreferences(PREFS_SESSION, MODE_PRIVATE)
-                .edit()
-                .putString("current_user", user)
-                .apply();
-
-        goToMain(user);
+    static String displayNameOf(FirebaseUser user) {
+        String name = user.getDisplayName();
+        return (name != null && !name.isEmpty()) ? name : "Athlete";
     }
 
     private void goToMain(String username) {

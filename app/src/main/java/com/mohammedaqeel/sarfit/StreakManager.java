@@ -1,68 +1,94 @@
 package com.mohammedaqeel.sarfit;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
-/** Tracks daily app usage streak and total workout-days per local account.
- *  Stored locally via SharedPreferences (per-username keys), so it currently
- *  does NOT survive an app uninstall -- that requires a cloud backend. */
+/** Tracks daily app usage streak and total workout-days per Firebase account,
+ *  stored in Firestore so it survives uninstall/reinstall and works across devices. */
 public class StreakManager {
 
-    private static final String PREFS = "sarfit_streaks";
     private static final SimpleDateFormat FMT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
-    /** Call once when the main dashboard is opened for a logged-in user. */
-    public static void recordVisit(Context context, String username) {
-        if (username == null) return;
-        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        String lastDateKey = username + "_last_date";
-        String streakKey = username + "_streak";
-        String totalKey = username + "_total";
+    public interface StreakCallback {
+        void onResult(int streak, int total);
+    }
 
-        String today = FMT.format(new Date());
-        String lastDate = prefs.getString(lastDateKey, null);
+    /** Call once when the main dashboard opens; updates streak/total in Firestore then returns them. */
+    public static void recordVisitAndFetch(String uid, final StreakCallback callback) {
+        if (uid == null) { callback.onResult(0, 0); return; }
 
-        if (today.equals(lastDate)) {
-            return; // already recorded today
-        }
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final com.google.firebase.firestore.DocumentReference ref = db.collection("users").document(uid);
 
-        int streak = prefs.getInt(streakKey, 0);
-        int total = prefs.getInt(totalKey, 0);
+        ref.get().addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot doc) {
+                String today = FMT.format(new Date());
+                String lastDate = doc.exists() ? doc.getString("lastDate") : null;
+                Long streakL = doc.exists() ? doc.getLong("streak") : 0L;
+                Long totalL = doc.exists() ? doc.getLong("total") : 0L;
+                int streak = streakL != null ? streakL.intValue() : 0;
+                int total = totalL != null ? totalL.intValue() : 0;
 
-        if (lastDate != null) {
-            Calendar yesterday = Calendar.getInstance();
-            yesterday.add(Calendar.DAY_OF_YEAR, -1);
-            String yesterdayStr = FMT.format(yesterday.getTime());
-            if (yesterdayStr.equals(lastDate)) {
-                streak += 1; // consecutive day
-            } else {
-                streak = 1; // streak broken
+                if (today.equals(lastDate)) {
+                    callback.onResult(streak, total);
+                    return;
+                }
+
+                if (lastDate != null) {
+                    Calendar yesterday = Calendar.getInstance();
+                    yesterday.add(Calendar.DAY_OF_YEAR, -1);
+                    String yesterdayStr = FMT.format(yesterday.getTime());
+                    streak = yesterdayStr.equals(lastDate) ? streak + 1 : 1;
+                } else {
+                    streak = 1;
+                }
+                total += 1;
+
+                Map<String, Object> update = new HashMap<>();
+                update.put("lastDate", today);
+                update.put("streak", streak);
+                update.put("total", total);
+
+                final int finalStreak = streak;
+                final int finalTotal = total;
+                ref.set(update, com.google.firebase.firestore.SetOptions.merge())
+                        .addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(com.google.android.gms.tasks.Task<Void> task) {
+                                callback.onResult(finalStreak, finalTotal);
+                            }
+                        });
             }
-        } else {
-            streak = 1; // first ever visit
-        }
-
-        total += 1;
-
-        prefs.edit()
-                .putString(lastDateKey, today)
-                .putInt(streakKey, streak)
-                .putInt(totalKey, total)
-                .apply();
+        }).addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+            @Override
+            public void onFailure(Exception e) {
+                callback.onResult(0, 0);
+            }
+        });
     }
 
-    public static int getStreak(Context context, String username) {
-        if (username == null) return 0;
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(username + "_streak", 0);
-    }
-
-    public static int getTotalDays(Context context, String username) {
-        if (username == null) return 0;
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(username + "_total", 0);
+    /** Fetches streak/total without modifying them (used by the Profile page). */
+    public static void fetchOnly(String uid, final StreakCallback callback) {
+        if (uid == null) { callback.onResult(0, 0); return; }
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot doc) {
+                        Long streakL = doc.exists() ? doc.getLong("streak") : 0L;
+                        Long totalL = doc.exists() ? doc.getLong("total") : 0L;
+                        callback.onResult(streakL != null ? streakL.intValue() : 0, totalL != null ? totalL.intValue() : 0);
+                    }
+                }).addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                    @Override
+                    public void onFailure(Exception e) { callback.onResult(0, 0); }
+                });
     }
 }
