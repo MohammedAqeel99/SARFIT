@@ -26,6 +26,7 @@
         <activity android:name=".DayDetailActivity" android:exported="false" />
         <activity android:name=".ProfileActivity" android:exported="false" />
         <activity android:name=".VideoActivity" android:exported="false" />
+        <activity android:name=".WarmupActivity" android:exported="false" />
 
     </application>
 </manifest>

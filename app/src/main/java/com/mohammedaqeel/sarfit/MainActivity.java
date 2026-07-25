@@ -49,6 +49,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        TextView tvWarmup = findViewById(R.id.tvWarmupButton);
+        tvWarmup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, WarmupActivity.class));
+            }
+        });
+
         LinearLayout container = findViewById(R.id.dayListContainer);
         List<WorkoutDay> days = WorkoutData.getSchedule();
 
