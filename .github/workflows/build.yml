@@ -1,4 +1,4 @@
-name: Build Signed APK
+name: Build APK (buildozer)
 
 on:
   workflow_dispatch:
@@ -18,29 +18,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          gradle-version: 8.4
+          python-version: '3.11'
 
-      - name: Build signed release APK
-        run: gradle assembleRelease
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake \
+            libffi-dev libssl-dev
+
+      - name: Install buildozer + cython
+        run: pip install --upgrade buildozer cython
+
+      - name: Build debug APK
+        run: buildozer -v android debug
         env:
-          KEYSTORE_PASSWORD: SarfitBuild123!
-          KEY_ALIAS: sarfitkey
-          KEY_PASSWORD: SarfitBuild123!
+          # Buildozer auto-downloads the Android SDK/NDK on first run
+          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SARFIT-signed-apk
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload keystore (keep this safe!)
-        uses: actions/upload-artifact@v4
-        with:
-          name: SARFIT-keystore
-          path: release.keystore
+          name: SARFIT-debug-apk
+          path: bin/*.apk
