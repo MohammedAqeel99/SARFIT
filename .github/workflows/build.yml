@@ -1,4 +1,4 @@
-name: Build Signed APK
+name: Build APK (buildozer)
 
 on:
   workflow_dispatch:
@@ -7,7 +7,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04   # pinned: ubuntu-latest (24.04) lacks libtinfo5/libncurses5-dev
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,39 +19,43 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Generate signing keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore release.keystore \
-            -alias sarfitkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "SarfitBuild123!" \
-            -keypass "SarfitBuild123!" \
-            -dname "CN=SARFIT, OU=Dev, O=SARFIT, L=City, S=State, C=US"
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          gradle-version: 7.5
+          python-version: '3.11'
 
-      - name: Build signed release APK
-        run: gradle assembleRelease
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk python3-pip autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev build-essential automake \
+            libsqlite3-dev libgdbm-dev libgdbm-compat-dev
+
+      - name: Install buildozer + cython
+        run: pip install --upgrade buildozer cython
+
+      # Cache the Android SDK/NDK + buildozer global cache so rebuilds are much faster
+      - name: Cache buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            ~/.android
+            .buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-
+
+      - name: Build debug APK
+        run: buildozer -v android debug
         env:
-          KEYSTORE_PASSWORD: SarfitBuild123!
-          KEY_ALIAS: sarfitkey
-          KEY_PASSWORD: SarfitBuild123!
+          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+          ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SARFIT-signed-apk
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload keystore (keep this safe!)
-        uses: actions/upload-artifact@v4
-        with:
-          name: SARFIT-keystore
-          path: release.keystore
-        
+          name: SARFIT-debug-apk
+          path: bin/*.apk
