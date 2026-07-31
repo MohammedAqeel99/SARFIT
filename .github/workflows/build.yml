@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04   # pinned: ubuntu-latest (24.04) lacks libtinfo5/libncurses5-dev
+    runs-on: ubuntu-22.04   # ubuntu-latest (24.04) is missing libtinfo5/libncurses5-dev
 
     steps:
       - name: Checkout code
@@ -36,7 +36,6 @@ jobs:
       - name: Install buildozer + cython
         run: pip install --upgrade buildozer cython
 
-      # Cache the Android SDK/NDK + buildozer global cache so rebuilds are much faster
       - name: Cache buildozer global directory
         uses: actions/cache@v4
         with:
@@ -48,8 +47,19 @@ jobs:
           restore-keys: |
             buildozer-
 
+      # Pre-accept the Android SDK licenses so sdkmanager doesn't stall
+      # waiting for interactive y/N input (which is what caused
+      # "Aidl not found" / build-tools install to be skipped in CI).
+      - name: Pre-accept Android SDK licenses
+        run: |
+          export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "\nd56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
       - name: Build debug APK
-        run: buildozer -v android debug
+        run: yes | buildozer -v android debug
         env:
           ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
           ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
