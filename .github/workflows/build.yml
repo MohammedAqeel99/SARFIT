@@ -1,4 +1,4 @@
-name: Build APK (buildozer)
+name: Build Signed APK
 
 on:
   workflow_dispatch:
@@ -18,29 +18,39 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Install system dependencies
+      - name: Generate signing keystore
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool \
-            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake \
-            libffi-dev libssl-dev
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias sarfitkey \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "SarfitBuild123!" \
+            -keypass "SarfitBuild123!" \
+            -dname "CN=SARFIT, OU=Dev, O=SARFIT, L=City, S=State, C=US"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 7.5
 
-      - name: Install buildozer + cython
-        run: pip install --upgrade buildozer cython
-
-      - name: Build debug APK
-        run: buildozer -v android debug
+      - name: Build signed release APK
+        run: gradle assembleRelease
         env:
-          # Buildozer auto-downloads the Android SDK/NDK on first run
-          ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+          KEYSTORE_PASSWORD: SarfitBuild123!
+          KEY_ALIAS: sarfitkey
+          KEY_PASSWORD: SarfitBuild123!
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SARFIT-debug-apk
-          path: bin/*.apk
+          name: SARFIT-signed-apk
+          path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload keystore (keep this safe!)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SARFIT-keystore
+          path: release.keystore
+        
