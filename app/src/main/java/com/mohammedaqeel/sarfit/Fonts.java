@@ -16,7 +16,7 @@ public class Fonts {
 
     public static Typeface medium(Context context) {
         if (medium == null) {
-            medium = ResourcesCompat.getFont(context, R.font.europa_medium);
+            medium = ResourcesCompat.getFont(context, R.font.ios_semibold);
         }
         return medium;
     }

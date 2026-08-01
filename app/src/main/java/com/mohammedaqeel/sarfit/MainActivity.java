@@ -57,6 +57,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        TextView tvCustomBuilder = findViewById(R.id.tvCustomBuilderButton);
+        tvCustomBuilder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, CustomBuilderActivity.class));
+            }
+        });
+
         LinearLayout container = findViewById(R.id.dayListContainer);
         List<WorkoutDay> days = WorkoutData.getSchedule();
 
