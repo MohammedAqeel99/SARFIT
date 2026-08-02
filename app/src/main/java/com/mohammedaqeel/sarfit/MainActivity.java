@@ -57,24 +57,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        TextView tvCustomBuilder = findViewById(R.id.tvCustomBuilderButton);
-        tvCustomBuilder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this, CustomBuilderActivity.class));
-            }
-        });
-
         LinearLayout container = findViewById(R.id.dayListContainer);
-        List<WorkoutDay> days = WorkoutData.getSchedule();
+        String[] days = DaySelectionManager.DAYS;
 
-        for (int idx = 0; idx < days.size(); idx++) {
-            View card = buildDayCard(days.get(idx), idx);
+        for (int idx = 0; idx < days.length; idx++) {
+            View card = buildDayCard(days[idx]);
             container.addView(card);
             animateCardIn(card, idx);
         }
 
         Fonts.applyRecursively(this, findViewById(android.R.id.content));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh day cards in case the user changed a combination and came back
+        LinearLayout container = findViewById(R.id.dayListContainer);
+        if (container != null && container.getChildCount() > 0) {
+            container.removeAllViews();
+            String[] days = DaySelectionManager.DAYS;
+            for (int idx = 0; idx < days.length; idx++) {
+                container.addView(buildDayCard(days[idx]));
+            }
+        }
     }
 
     private void animateCardIn(View view, int index) {
@@ -90,7 +96,10 @@ public class MainActivity extends AppCompatActivity {
         view.startAnimation(set);
     }
 
-    private View buildDayCard(final WorkoutDay day, final int index) {
+    private View buildDayCard(final String dayName) {
+        final List<String> muscles = DaySelectionManager.getMusclesForDay(this, dayName);
+        final boolean isRest = muscles.isEmpty();
+
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -102,15 +111,15 @@ public class MainActivity extends AppCompatActivity {
         card.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView tvDay = new TextView(this);
-        tvDay.setText(day.dayName);
+        tvDay.setText(dayName);
         tvDay.setTextColor(Color.WHITE);
         tvDay.setTextSize(19);
         tvDay.setTypeface(tvDay.getTypeface(), android.graphics.Typeface.BOLD);
         card.addView(tvDay);
 
         TextView tvFocus = new TextView(this);
-        tvFocus.setText(day.focus);
-        tvFocus.setTextColor(Color.parseColor(day.isRest ? "#777777" : accentFor(day.bodyHighlight)));
+        tvFocus.setText(DaySelectionManager.labelFor(muscles));
+        tvFocus.setTextColor(Color.parseColor(isRest ? "#777777" : "#39FF14"));
         tvFocus.setTextSize(14);
         LinearLayout.LayoutParams flp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -118,27 +127,15 @@ public class MainActivity extends AppCompatActivity {
         tvFocus.setLayoutParams(flp);
         card.addView(tvFocus);
 
-        if (!day.isRest) {
-            card.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(MainActivity.this, DayDetailActivity.class);
-                    intent.putExtra("dayIndex", index);
-                    startActivity(intent);
-                }
-            });
-        }
+        card.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, DayDetailActivity.class);
+                intent.putExtra("dayName", dayName);
+                startActivity(intent);
+            }
+        });
 
         return card;
-    }
-
-    private String accentFor(String group) {
-        switch (group) {
-            case "chest_delts": return "#39FF14";
-            case "back_rear_delts": return "#00F0FF";
-            case "arms_legs_core": return "#FF2E9F";
-            case "cardio": return "#FFD700";
-            default: return "#777777";
-        }
     }
 }

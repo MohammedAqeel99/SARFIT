@@ -50,54 +50,51 @@ public class BodyModelView extends View {
         startPulse();
     }
 
-    public void setMuscleGroup(String muscleName) {
-        showBack = false;
+    /** Highlights the body parts for any combination of muscle groups (e.g. Chest + Triceps).
+     *  Automatically shows the back view if any back-only muscle is included. */
+    public void setMuscleGroups(java.util.Collection<String> muscles) {
         highlightedParts.clear();
         highlightColor = Color.parseColor("#39FF14");
-        if (muscleName == null) { invalidate(); return; }
+        showBack = false;
 
-        switch (muscleName) {
-            case "Chest":
-                highlightedParts.addAll(Arrays.asList("pecL", "pecR"));
-                highlightColor = Color.parseColor("#39FF14");
-                break;
-            case "Side Delts":
-            case "Front Delts":
-                highlightedParts.addAll(Arrays.asList("deltL", "deltR"));
-                highlightColor = Color.parseColor("#39FF14");
-                break;
-            case "Back":
-                showBack = true;
-                highlightedParts.addAll(Arrays.asList("lats", "traps"));
-                highlightColor = Color.parseColor("#00F0FF");
-                break;
-            case "Rear Delts":
-                showBack = true;
-                highlightedParts.addAll(Arrays.asList("rearDeltL", "rearDeltR"));
-                highlightColor = Color.parseColor("#00F0FF");
-                break;
-            case "Biceps":
-                highlightedParts.addAll(Arrays.asList("bicepL", "bicepR"));
-                highlightColor = Color.parseColor("#FF2E9F");
-                break;
-            case "Triceps":
-                showBack = true;
-                highlightedParts.addAll(Arrays.asList("tricepL", "tricepR"));
-                highlightColor = Color.parseColor("#FF2E9F");
-                break;
-            case "Legs":
-                highlightedParts.addAll(Arrays.asList("quadL", "quadR"));
-                highlightColor = Color.parseColor("#FF2E9F");
-                break;
-            case "Core":
-                highlightedParts.addAll(Arrays.asList("abs"));
-                highlightColor = Color.parseColor("#FF2E9F");
-                break;
-            case "Cardio":
-                highlightedParts.addAll(Arrays.asList("quadL", "quadR", "abs"));
-                highlightColor = Color.parseColor("#FFD700");
-                break;
-            default: break;
+        boolean hasBackOnly = muscles.contains("Back") || muscles.contains("Triceps");
+        if (hasBackOnly) showBack = true;
+
+        for (String muscle : muscles) {
+            if (muscle == null) continue;
+            switch (muscle) {
+                case "Chest":
+                    highlightedParts.add("pecL"); highlightedParts.add("pecR");
+                    break;
+                case "Shoulders":
+                    if (showBack) {
+                        highlightedParts.add("rearDeltL"); highlightedParts.add("rearDeltR");
+                    } else {
+                        highlightedParts.add("deltL"); highlightedParts.add("deltR");
+                    }
+                    break;
+                case "Back":
+                    highlightedParts.add("lats"); highlightedParts.add("traps");
+                    break;
+                case "Biceps":
+                case "Forearms":
+                    highlightedParts.add("bicepL"); highlightedParts.add("bicepR");
+                    break;
+                case "Triceps":
+                    highlightedParts.add("tricepL"); highlightedParts.add("tricepR");
+                    break;
+                case "Legs":
+                    highlightedParts.add("quadL"); highlightedParts.add("quadR");
+                    if (showBack) { highlightedParts.add("hamstrings"); }
+                    break;
+                case "Core":
+                    highlightedParts.add("abs");
+                    break;
+                case "Cardio":
+                    highlightedParts.add("quadL"); highlightedParts.add("quadR"); highlightedParts.add("abs");
+                    break;
+                default: break;
+            }
         }
         invalidate();
     }

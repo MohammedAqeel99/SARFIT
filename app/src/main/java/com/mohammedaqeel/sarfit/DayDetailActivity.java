@@ -1,5 +1,6 @@
 package com.mohammedaqeel.sarfit;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -7,21 +8,28 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class DayDetailActivity extends AppCompatActivity {
 
-    private WorkoutDay day;
+    private String dayName;
+    private List<String> muscles;
+    private Map<String, WeekPlan[]> pools;
     private BodyModelView bodyModelView;
     private TextView tvViewLabel;
     private LinearLayout weekTabsContainer;
     private LinearLayout exerciseListContainer;
+    private ImageView ivBackground;
     private int selectedWeek = 0;
 
     @Override
@@ -29,31 +37,27 @@ public class DayDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_day_detail);
 
-        int dayIndex = getIntent().getIntExtra("dayIndex", 0);
-        day = WorkoutData.getSchedule().get(dayIndex);
+        dayName = getIntent().getStringExtra("dayName");
+        if (dayName == null) dayName = "Monday";
+        pools = MasterMuscleData.getPools();
 
         TextView tvTitle = findViewById(R.id.tvDayTitle);
         TextView tvFocus = findViewById(R.id.tvDayFocus);
         TextView tvSetsReps = findViewById(R.id.tvSetsRepsInfo);
         FrameLayout bodyContainer = findViewById(R.id.bodyModelContainer);
+        ivBackground = findViewById(R.id.ivDayBackground);
         final TextView tvFlipView = findViewById(R.id.tvFlipView);
+        final TextView tvChangeCombo = findViewById(R.id.tvChangeCombo);
         tvViewLabel = findViewById(R.id.tvViewLabel);
         weekTabsContainer = findViewById(R.id.weekTabsContainer);
         exerciseListContainer = findViewById(R.id.exerciseListContainer);
 
-        tvTitle.setText(day.dayName);
-        tvFocus.setText(day.focus);
+        tvTitle.setText(dayName);
         tvSetsReps.setText("Compound lifts: 4 sets x 6-10 reps, rest 2-3 min  |  Isolation: 3 sets x 10-15 reps, rest 60-90 sec");
 
         bodyModelView = new BodyModelView(this);
         bodyContainer.addView(bodyModelView, 0, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-
-        // Default: highlight the first muscle section of the day
-        if (!day.weeks.isEmpty() && !day.weeks.get(0).sections.isEmpty()) {
-            bodyModelView.setMuscleGroup(day.weeks.get(0).sections.get(0).muscleName);
-        }
-        tvViewLabel.setText(bodyModelView.isShowingBack() ? "Back" : "Front");
 
         tvFlipView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,25 +67,89 @@ public class DayDetailActivity extends AppCompatActivity {
             }
         });
 
-        buildWeekTabs();
-        renderWeek(0);
+        tvChangeCombo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showCombinationPicker();
+            }
+        });
 
+        loadDayState();
         Fonts.applyRecursively(this, findViewById(android.R.id.content));
+    }
+
+    private void loadDayState() {
+        muscles = DaySelectionManager.getMusclesForDay(this, dayName);
+        TextView tvFocus = findViewById(R.id.tvDayFocus);
+        tvFocus.setText(DaySelectionManager.labelFor(muscles));
+
+        bodyModelView.setMuscleGroups(muscles);
+        tvViewLabel.setText(bodyModelView.isShowingBack() ? "Back" : "Front");
+
+        updateBackground();
+        buildWeekTabs();
+        renderWeek(selectedWeek);
+    }
+
+    private void updateBackground() {
+        int bg;
+        if (muscles.contains("Chest") || muscles.contains("Shoulders")) {
+            bg = R.drawable.bg_theme_push;
+        } else if (muscles.contains("Back") || muscles.contains("Triceps")) {
+            bg = R.drawable.bg_theme_pull;
+        } else if (muscles.contains("Cardio") && muscles.size() == 1) {
+            bg = R.drawable.bg_theme_cardio;
+        } else if (!muscles.isEmpty()) {
+            bg = R.drawable.bg_theme_arms_legs;
+        } else {
+            bg = R.drawable.bg_theme_cardio;
+        }
+        ivBackground.setImageResource(bg);
+    }
+
+    private void showCombinationPicker() {
+        final String[] allMuscles = MasterMuscleData.ALL_MUSCLES;
+        final boolean[] checked = new boolean[allMuscles.length];
+        for (int i = 0; i < allMuscles.length; i++) {
+            checked[i] = muscles.contains(allMuscles[i]);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Pick muscles for " + dayName)
+                .setMultiChoiceItems(allMuscles, checked, new android.content.DialogInterface.OnMultiChoiceClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which, boolean isChecked) {
+                        checked[which] = isChecked;
+                    }
+                })
+                .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(android.content.DialogInterface dialog, int which) {
+                        List<String> selected = new ArrayList<>();
+                        for (int i = 0; i < allMuscles.length; i++) {
+                            if (checked[i]) selected.add(allMuscles[i]);
+                        }
+                        DaySelectionManager.setMusclesForDay(DayDetailActivity.this, dayName, selected);
+                        selectedWeek = 0;
+                        loadDayState();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void buildWeekTabs() {
         weekTabsContainer.removeAllViews();
-        List<WeekPlan> weeks = day.weeks;
 
-        for (int w = 0; w < weeks.size(); w++) {
+        for (int w = 0; w < 4; w++) {
             final int weekIdx = w;
             TextView tab = new TextView(this);
-            tab.setText("Week " + weeks.get(w).weekNumber);
+            tab.setText("Week " + (w + 1));
             tab.setTextColor(Color.WHITE);
             tab.setTextSize(13);
             tab.setGravity(Gravity.CENTER);
             tab.setPadding(20, 14, 20, 14);
-            tab.setBackgroundColor(weekIdx == selectedWeek ? Color.parseColor(accentFor(day.bodyHighlight)) : Color.parseColor("#1A1A1E"));
+            tab.setBackgroundColor(weekIdx == selectedWeek ? Color.parseColor("#39FF14") : Color.parseColor("#1A1A1E"));
             if (weekIdx == selectedWeek) tab.setTextColor(Color.BLACK);
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -104,23 +172,37 @@ public class DayDetailActivity extends AppCompatActivity {
 
     private void renderWeek(int weekIdx) {
         exerciseListContainer.removeAllViews();
-        WeekPlan plan = day.weeks.get(weekIdx);
 
-        for (MuscleSection section : plan.sections) {
-            TextView header = new TextView(this);
-            header.setText(section.muscleName);
-            header.setTextColor(Color.parseColor(accentFor(day.bodyHighlight)));
-            header.setTextSize(16);
-            header.setTypeface(header.getTypeface(), Typeface.BOLD);
-            LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-            hlp.topMargin = 18;
-            hlp.bottomMargin = 8;
-            header.setLayoutParams(hlp);
-            exerciseListContainer.addView(header);
+        if (muscles.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText("No muscles set for " + dayName + " yet. Tap \"Change Muscle Combination\" above to build this day.");
+            empty.setTextColor(Color.parseColor("#AAAAAA"));
+            empty.setTextSize(13);
+            exerciseListContainer.addView(empty);
+            return;
+        }
 
-            for (Exercise ex : section.exercises) {
-                exerciseListContainer.addView(buildExerciseRow(ex, section.muscleName));
+        for (String muscle : muscles) {
+            WeekPlan[] weekPlans = pools.get(muscle);
+            if (weekPlans == null || weekIdx >= weekPlans.length) continue;
+            WeekPlan plan = weekPlans[weekIdx];
+
+            for (MuscleSection section : plan.sections) {
+                TextView header = new TextView(this);
+                header.setText(section.muscleName);
+                header.setTextColor(Color.parseColor("#39FF14"));
+                header.setTextSize(16);
+                header.setTypeface(header.getTypeface(), Typeface.BOLD);
+                LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                hlp.topMargin = 18;
+                hlp.bottomMargin = 8;
+                header.setLayoutParams(hlp);
+                exerciseListContainer.addView(header);
+
+                for (Exercise ex : section.exercises) {
+                    exerciseListContainer.addView(buildExerciseRow(ex, section.muscleName));
+                }
             }
         }
         Fonts.applyRecursively(this, exerciseListContainer);
@@ -167,8 +249,8 @@ public class DayDetailActivity extends AppCompatActivity {
         headerRow.addView(nameCol);
 
         final TextView arrow = new TextView(this);
-        arrow.setText("\u25BE"); // small down-caret
-        arrow.setTextColor(Color.parseColor(accentFor(day.bodyHighlight)));
+        arrow.setText("\u25BE");
+        arrow.setTextColor(Color.parseColor("#39FF14"));
         arrow.setTextSize(16);
         headerRow.addView(arrow);
 
@@ -195,7 +277,7 @@ public class DayDetailActivity extends AppCompatActivity {
         watchBtn.setText("\u25B6  Watch proper form");
         watchBtn.setTextColor(Color.parseColor("#00F0FF"));
         watchBtn.setTextSize(13);
-        watchBtn.setTypeface(watchBtn.getTypeface(), android.graphics.Typeface.BOLD);
+        watchBtn.setTypeface(watchBtn.getTypeface(), Typeface.BOLD);
         LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         wlp.topMargin = 14;
@@ -218,22 +300,12 @@ public class DayDetailActivity extends AppCompatActivity {
                 expandedInfo.setVisibility(expanding ? View.VISIBLE : View.GONE);
                 watchBtn.setVisibility(expanding ? View.VISIBLE : View.GONE);
                 arrow.animate().rotation(expanding ? 180f : 0f).setDuration(200).start();
-                bodyModelView.setMuscleGroup(muscleName);
+                bodyModelView.setMuscleGroups(java.util.Collections.singletonList(muscleName));
                 tvViewLabel.setText(bodyModelView.isShowingBack() ? "Back" : "Front");
             }
         });
 
         return row;
-    }
-
-    private String accentFor(String group) {
-        switch (group) {
-            case "chest_delts": return "#39FF14";
-            case "back_rear_delts": return "#00F0FF";
-            case "arms_legs_core": return "#FF2E9F";
-            case "cardio": return "#FFD700";
-            default: return "#888888";
-        }
     }
 
     @Override
