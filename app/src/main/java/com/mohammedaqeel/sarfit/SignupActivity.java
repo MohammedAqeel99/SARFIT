@@ -74,6 +74,7 @@ public class SignupActivity extends AppCompatActivity {
                                 initialData.put("username", username);
                                 initialData.put("streak", 0);
                                 initialData.put("total", 0);
+                                initialData.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
                                 FirebaseFirestore.getInstance().collection("users")
                                         .document(user.getUid())
                                         .set(initialData);
