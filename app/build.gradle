@@ -1,47 +1,24 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.mohammedaqeel.sarfit'
-    compileSdk 34
+    compileSdkVersion 21
+    buildToolsVersion "21.1.0"
 
     defaultConfig {
         applicationId "com.mohammedaqeel.sarfit"
-        minSdk 23
-        targetSdk 34
-        versionCode 7
-        versionName "1.6"
+        minSdkVersion 14
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
     }
-
-    signingConfigs {
-        release {
-            storeFile file("../release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "SarfitBuild123!"
-            keyAlias System.getenv("KEY_ALIAS") ?: "sarfitkey"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "SarfitBuild123!"
-        }
-    }
-
     buildTypes {
-        debug {
-            minifyEnabled false
-        }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation platform('com.google.firebase:firebase-bom:33.1.0')
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
+    compile fileTree(dir: 'libs', include: ['*.jar'])
 }
-
-apply plugin: 'com.google.gms.google-services'

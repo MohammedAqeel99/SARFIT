@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp" android:height="640dp"
+    android:viewportWidth="360" android:viewportHeight="640">
+    <path android:pathData="M0,0h360v640h-360z" android:fillColor="#0A0A0A"/>
+    <path android:pathData="M0,0h360v640h-360z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:fillColor">
+            <gradient android:type="linear" android:angle="135"
+                android:startColor="#1A2418" android:endColor="#08080A" android:centerColor="#101614"/>
+        </aapt:attr>
+    </path>
+    <!-- Wings -->
+    <path android:fillColor="#18201A"
+        android:pathData="M180,220 Q100,180 40,220 Q80,240 90,270 Q60,270 30,300 Q80,300 100,320 Q170,300 180,260 Z"/>
+    <path android:fillColor="#18201A"
+        android:pathData="M180,220 Q260,180 320,220 Q280,240 270,270 Q300,270 330,300 Q280,300 260,320 Q190,300 180,260 Z"/>
+    <!-- Classical bust/torso silhouette -->
+    <path android:fillColor="#20281F"
+        android:pathData="M180,150 a40,40 0 1 1 -0.1,0 Z M140,210 Q120,240 122,300 L128,420 Q130,450 155,455 L205,455 Q230,450 232,420 L238,300 Q240,240 220,210 Q200,225 180,225 Q160,225 140,210 Z"/>
+    <!-- Laurel-like base accents -->
+    <path android:fillColor="#161C15"
+        android:pathData="M150,455 L145,520 L170,520 L172,455 Z M210,455 L215,520 L190,520 L188,455 Z"/>
+</vector>
