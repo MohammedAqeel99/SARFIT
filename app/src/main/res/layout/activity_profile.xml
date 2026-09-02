@@ -126,6 +126,19 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/tvSkipBeginner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="Skip Beginner Week (I'm experienced)"
+            android:textColor="@color/neon_cyan"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:background="@drawable/gradient_card" />
+
+        <TextView
             android:id="@+id/tvLogout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

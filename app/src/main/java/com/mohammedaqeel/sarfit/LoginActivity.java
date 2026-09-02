@@ -125,10 +125,23 @@ public class LoginActivity extends AppCompatActivity {
         return (name != null && !name.isEmpty()) ? name : "Athlete";
     }
 
-    private void goToMain(String username) {
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("username", username);
-        startActivity(intent);
-        finish();
+    private void goToMain(final String username) {
+        com.google.firebase.auth.FirebaseUser current = auth.getCurrentUser();
+        String uidToCheck = current != null ? current.getUid() : null;
+
+        AttendanceManager.getProgress(uidToCheck, new AttendanceManager.ProgressCallback() {
+            @Override
+            public void onResult(java.util.List<String> attendedDates, boolean beginnerCompleted) {
+                Intent intent;
+                if (beginnerCompleted) {
+                    intent = new Intent(LoginActivity.this, MainActivity.class);
+                } else {
+                    intent = new Intent(LoginActivity.this, BeginnerWeekActivity.class);
+                }
+                intent.putExtra("username", username);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 }

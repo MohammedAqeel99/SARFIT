@@ -118,6 +118,17 @@ public class ProfileActivity extends AppCompatActivity {
         pulseAnimator.start();
         pulseY.start();
 
+        final TextView tvSkipBeginner = findViewById(R.id.tvSkipBeginner);
+        tvSkipBeginner.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (uid != null) {
+                    AttendanceManager.markBeginnerCompleted(uid);
+                    tvSkipBeginner.setText("\u2713  Beginner Week Skipped");
+                }
+            }
+        });
+
         TextView tvLogout = findViewById(R.id.tvLogout);
         tvLogout.setOnClickListener(new View.OnClickListener() {
             @Override
