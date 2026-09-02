@@ -36,6 +36,16 @@ public class BeginnerWeekActivity extends AppCompatActivity {
         container = findViewById(R.id.beginnerDaysContainer);
         tvUnlockMain = findViewById(R.id.tvUnlockMain);
 
+        TextView tvYouButton = findViewById(R.id.tvBeginnerYouButton);
+        tvYouButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(BeginnerWeekActivity.this, ProfileActivity.class);
+                intent.putExtra("username", username);
+                startActivity(intent);
+            }
+        });
+
         tvUnlockMain.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -44,6 +54,12 @@ public class BeginnerWeekActivity extends AppCompatActivity {
             }
         });
 
+        loadProgress();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadProgress();
     }
 

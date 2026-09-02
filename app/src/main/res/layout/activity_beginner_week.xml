@@ -10,13 +10,33 @@
         android:orientation="vertical"
         android:padding="22dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Welcome to SARFIT"
-            android:textColor="@color/neon_green"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Welcome to SARFIT"
+                android:textColor="@color/neon_green"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvBeginnerYouButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="You"
+                android:textColor="@color/neon_cyan"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:padding="10dp"
+                android:background="@drawable/gradient_card" />
+
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
